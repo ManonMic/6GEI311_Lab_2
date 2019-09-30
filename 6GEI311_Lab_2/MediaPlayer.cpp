@@ -79,117 +79,73 @@ HRESULT MediaPlayer::SetSeek()
 	return Graph->QueryInterface(IID_IMediaSeeking, (void**)&Seek);
 }
 
-bool MediaPlayer::ReadKey(char *c)
+PyObject* MediaPlayer::play_video(PyObject* self, PyObject* args)
 {
-	bool valid = false;
-	if (_kbhit())
-	{
-		*c = toupper(_getch());
-		switch (*c)
-		{
-			case 'P':
-				if (state == pause)
-				{
-					PlayVideo();
-				}
-				else
-				{
-					PauseVideo();
-				}
-				valid = true;
-				break;
-			case 'A':
-				FastForwardVideo();
-				valid = true;
-				break;
-			case 'R':
-				RestartVideo();
-				valid = true;
-				break;
-			case 'Q':
-				valid = true;
-				break;
-		}
-	}
-	return valid;
-}
+	MediaPlayer *mediaPlayer;
+	PyArg_ParseTuple(args, "O", &mediaPlayer);
 
-HRESULT MediaPlayer::PlayVideo()
-{
-	HRESULT hresult = Control->Run();
-	if (SUCCEEDED(hresult))
-	{
-		state = play;
-		long evCode;
-		Event->WaitForCompletion(1, &evCode);
-	}
-	else
-	{
-		printf("ERROR - Could not play the video.");
-	}
-	return hresult;
-}
-
-HRESULT MediaPlayer::PauseVideo()
-{
-	HRESULT hresult = Control->Pause();
-	if (SUCCEEDED(hresult))
-	{
-		state = pause;
-	}
-	else
-	{
-		printf("ERROR - Could not pause the video.");
-	}
-	return hresult;
-}
-
-HRESULT MediaPlayer::FastForwardVideo()
-{
-	double rate;
 	HRESULT hresult = NULL;
-	Seek->GetRate(&rate);
-	if (rate == 1.0)
+	if (mediaPlayer->state == States::pause)
 	{
-		hresult = Seek->SetRate(2.0);
-		if (FAILED(hresult))
+		hresult = mediaPlayer->Control->Run();
+		if (SUCCEEDED(hresult))
 		{
-			printf("ERROR - Could not set rate to 2.0.");
+			mediaPlayer->state = States::play;
+			long evCode;
+			mediaPlayer->Event->WaitForCompletion(1, &evCode);
 		}
 	}
-	else
-	{
-		hresult = Seek->SetRate(1.0);
-		if (FAILED(hresult))
-		{
-			printf("ERROR - Could not set rate to 1.0.");
-		}
-	}
-	return hresult;
+
+	PyObject *pythonVal = Py_BuildValue("i", hresult);
+	return pythonVal;
 }
 
-HRESULT MediaPlayer::RestartVideo()
-{
-	REFERENCE_TIME start = 0;
-	HRESULT hresult = NULL;
-	hresult = Seek->SetPositions(
-		&start, AM_SEEKING_AbsolutePositioning,
-		NULL, AM_SEEKING_NoPositioning
-	);
-	if (FAILED(hresult))
-	{
-		printf("ERROR - Could not set positions.");
-	}
-	if (state == pause)
-	{
-		PauseVideo();
-	}
-	else
-	{
-		PlayVideo();
-	}
-	return hresult;
-}
+//HRESULT MediaPlayer::FastForwardVideo(PyObject* self, PyObject* args)
+//{
+//	double rate;
+//	HRESULT hresult = NULL;
+//	Seek->GetRate(&rate);
+//	if (rate == 1.0)
+//	{
+//		hresult = Seek->SetRate(2.0);
+//		if (FAILED(hresult))
+//		{
+//			printf("ERROR - Could not set rate to 2.0.");
+//		}
+//	}
+//	else
+//	{
+//		hresult = Seek->SetRate(1.0);
+//		if (FAILED(hresult))
+//		{
+//			printf("ERROR - Could not set rate to 1.0.");
+//		}
+//	}
+//	return hresult;
+//}
+//
+//HRESULT MediaPlayer::RestartVideo(PyObject* self, PyObject* args)
+//{
+//	REFERENCE_TIME start = 0;
+//	HRESULT hresult = NULL;
+//	hresult = Seek->SetPositions(
+//		&start, AM_SEEKING_AbsolutePositioning,
+//		NULL, AM_SEEKING_NoPositioning
+//	);
+//	if (FAILED(hresult))
+//	{
+//		printf("ERROR - Could not set positions.");
+//	}
+//	if (state == pause)
+//	{
+//		PauseVideo();
+//	}
+//	else
+//	{
+//		PlayVideo();
+//	}
+//	return hresult;
+//}
 
 MediaPlayer::MediaPlayer()
 {
@@ -200,7 +156,7 @@ MediaPlayer::MediaPlayer()
 	InitCOMLib();
 	InitFilterGraphManager();
 	BuildGraph();
-	PauseVideo();
+	state = States::pause;
 }
 
 MediaPlayer::~MediaPlayer() 
@@ -211,25 +167,18 @@ MediaPlayer::~MediaPlayer()
 	delete Seek;
 }
 
-static PyObject* player(PyObject* self, PyObject* args)
+static PyObject* init(PyObject* self, PyObject* args)
 {
-	MediaPlayer *player = new MediaPlayer();
+	MediaPlayer *mediaPlayer = new MediaPlayer;
 
-	char key = ' ';
-
-	while (key != 'Q')
-	{
-		while (!player->ReadKey(&key)) {}
-	}
-	std::cout << "End of program." << std::endl;
-	PyObject * python_val = Py_BuildValue("");
-	return python_val;
+	PyObject *pythonVal = Py_BuildValue("O", mediaPlayer);
+	return pythonVal;
 }
 
 static PyMethodDef methods[] = {
-	   { "player", player, METH_NOARGS,
-	   "Play a video" },
-	   { NULL, NULL, 0, NULL }
+	   { "init", init, METH_NOARGS, "Initialize a mediaPlayer c++ object on the memory stack." },
+	   { "play_video", MediaPlayer::play_video, METH_VARARGS, "Play a video." },
+	   { NULL, NULL }
 };
 
 static struct PyModuleDef cModPyDem =

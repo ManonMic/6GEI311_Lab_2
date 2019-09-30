@@ -6,15 +6,6 @@
 class MediaPlayer
 {
 private:
-	IGraphBuilder *Graph;
-	IMediaControl *Control;
-	IMediaEvent *Event;
-	IMediaSeeking *Seek;
-	enum STATE {
-		play,
-		pause
-	};
-
 	HRESULT InitCOMLib();
 	HRESULT RenderFile(LPCWSTR filePath);
 	HRESULT SetControl();
@@ -22,14 +13,21 @@ private:
 	HRESULT SetSeek();
 	HRESULT InitFilterGraphManager();
 	HRESULT BuildGraph();
-	HRESULT PlayVideo();
-	HRESULT PauseVideo();
-	HRESULT FastForwardVideo();
-	HRESULT RestartVideo();
+	
 public:
 	MediaPlayer();
 	~MediaPlayer();
-	bool ReadKey(char *);
-	STATE state;
+	enum class States {
+		play,
+		pause
+	};
+	States state;
+	IGraphBuilder *Graph;
+	IMediaControl *Control;
+	IMediaEvent *Event;
+	IMediaSeeking *Seek;
+	static PyObject* play_video(PyObject* self, PyObject* args);
+	static PyObject* fastforward_video(PyObject* self, PyObject* args);
+	static PyObject* restart_video(PyObject* self, PyObject* args);
 };
 
