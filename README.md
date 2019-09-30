@@ -36,18 +36,19 @@ git clone https://github.com/ManonMic/6GEI311_Lab_2.git
     C:\Program Files\Python36\libs
     ```
 * Build the solution by pressing _Ctrl + Shift + B_
+
+## Using the video player
+
 * Open Powershell or Command Line
-* Move to _C:\Users\MyUserName\Documents\Visual Studio 2017\Projects\6GEI311_Lab_2\x64\Release_
-* Launch python
+* Move to _..\MyProjectFolders\6GEI311_Lab_2_
+* Run the python script
 ```
-python
+python player.py
 ```
-* Import the module
+* Follow the operation instructions
 ```
-import videoplayer
+P : Play or pause accordingly to the actual state of the video. It will pause if it's playing, and vice versa
+A : Fast forward (x2). Press again to go back to the normal rate.
+R : Rewinds the video to the beginning with respect to the current playing state. If the video was playing, the video rewinds and automatically plays. If paused, the video will not play until you press P again.
+Q : Quit the program and the video
 ```
-* Execute the function
-```
-videoplayer.player()
-```
-* Use the program
