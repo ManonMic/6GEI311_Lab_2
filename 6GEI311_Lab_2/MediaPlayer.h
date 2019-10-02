@@ -22,14 +22,12 @@ public:
 		pause
 	};
 	States state;
-	States GetState();
-	void ChangeState(States state);
 	IGraphBuilder *Graph;
 	IMediaControl *Control;
 	IMediaEvent *Event;
 	IMediaSeeking *Seek;
-	static PyObject* play_video(PyObject* self, PyObject* args);
-	static PyObject* fastforward_video(PyObject* self, PyObject* args);
-	static PyObject* restart_video(PyObject* self, PyObject* args);
+	void PlayPauseVideo();
+	void FastForwardVideo();
+	void RewindVideo();
 };
 
