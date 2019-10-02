@@ -31,28 +31,28 @@ HRESULT MediaPlayer::BuildGraph()
 	hresult = RenderFile(L"C:\\Example.avi");
 	if (FAILED(hresult))
 	{
-		printf("ERROR - Could not render the file.");
+		std::cout << "ERROR - Could not render the file." << std::endl;
 		return hresult;
 	}
 
 	hresult = SetControl();
 	if (FAILED(hresult))
 	{
-		printf("ERROR - Could not query the control.");
+		std::cout << "ERROR - Could not query the control." << std::endl;
 		return hresult;
 	}
 
 	hresult = SetEvent();
 	if (FAILED(hresult))
 	{
-		printf("ERROR - Could not query the event.");
+		std::cout << "ERROR - Could not query the event." << std::endl;
 		return hresult;
 	}
 
 	hresult = SetSeek();
 	if (FAILED(hresult))
 	{
-		printf("ERROR - Could not query the seek.");
+		std::cout << "ERROR - Could not query the seek." << std::endl;
 		return hresult;
 	}
 
@@ -79,51 +79,86 @@ HRESULT MediaPlayer::SetSeek()
 	return Graph->QueryInterface(IID_IMediaSeeking, (void**)&Seek);
 }
 
+MediaPlayer::States MediaPlayer::GetState()
+{
+	int state = static_cast<int>(this->state);
+	if (state == 0 || state == 3)
+	{
+		return States::play;
+	}
+	else if (state == 1 || state == 4)
+	{
+		return States::pause;
+	}
+}
+
+void MediaPlayer::ChangeState(States state)
+{
+	this->state = state;
+}
+
 PyObject* MediaPlayer::play_video(PyObject* self, PyObject* args)
 {
 	MediaPlayer *mediaPlayer;
 	PyArg_ParseTuple(args, "O", &mediaPlayer);
 
 	HRESULT hresult = NULL;
-	if (mediaPlayer->state == States::pause)
+	States state = mediaPlayer->GetState();
+	if (state == States::pause)
 	{
 		hresult = mediaPlayer->Control->Run();
 		if (SUCCEEDED(hresult))
 		{
+			std::cout << "play_video before: " << static_cast<int>(state) << std::endl;
 			mediaPlayer->state = States::play;
+			std::cout << "play_video after: " << static_cast<int>(state) << std::endl;
 			long evCode;
 			mediaPlayer->Event->WaitForCompletion(1, &evCode);
 		}
 	}
+	else if (state == States::play)
+	{
+		hresult = mediaPlayer->Control->Pause();
+		if (SUCCEEDED(hresult))
+		{
+			std::cout << "play_video state before: " << static_cast<int>(state) << std::endl;
+			mediaPlayer->state = States::pause;
+			std::cout << "play_video state after: " << static_cast<int>(state) << std::endl;
+		}
+	}
 
+	PyObject *pythonVal = Py_BuildValue("i", hresult);
+	std::cout << "obj state val: " << static_cast<int>(mediaPlayer->state) << std::endl;
+	return pythonVal;
+}
+
+PyObject* MediaPlayer::fastforward_video(PyObject* self, PyObject* args)
+{
+	MediaPlayer *mediaPlayer;
+	PyArg_ParseTuple(args, "O", &mediaPlayer);
+	double rate;
+	HRESULT hresult = NULL;
+	mediaPlayer->Seek->GetRate(&rate);
+	if (rate == 1.0)
+	{
+		hresult = mediaPlayer->Seek->SetRate(2.0);
+		if (FAILED(hresult))
+		{
+			std::cout << "ERROR - Could not set rate to 2.0." << std::endl;
+		}
+	}
+	else
+	{
+		hresult = mediaPlayer->Seek->SetRate(1.0);
+		if (FAILED(hresult))
+		{
+			std::cout << "ERROR - Could not set rate to 1.0." << std::endl;
+		}
+	}
 	PyObject *pythonVal = Py_BuildValue("i", hresult);
 	return pythonVal;
 }
 
-//HRESULT MediaPlayer::FastForwardVideo(PyObject* self, PyObject* args)
-//{
-//	double rate;
-//	HRESULT hresult = NULL;
-//	Seek->GetRate(&rate);
-//	if (rate == 1.0)
-//	{
-//		hresult = Seek->SetRate(2.0);
-//		if (FAILED(hresult))
-//		{
-//			printf("ERROR - Could not set rate to 2.0.");
-//		}
-//	}
-//	else
-//	{
-//		hresult = Seek->SetRate(1.0);
-//		if (FAILED(hresult))
-//		{
-//			printf("ERROR - Could not set rate to 1.0.");
-//		}
-//	}
-//	return hresult;
-//}
-//
 //HRESULT MediaPlayer::RestartVideo(PyObject* self, PyObject* args)
 //{
 //	REFERENCE_TIME start = 0;
@@ -178,6 +213,7 @@ static PyObject* init(PyObject* self, PyObject* args)
 static PyMethodDef methods[] = {
 	   { "init", init, METH_NOARGS, "Initialize a mediaPlayer c++ object on the memory stack." },
 	   { "play_video", MediaPlayer::play_video, METH_VARARGS, "Play a video." },
+	   { "fastforward_video", MediaPlayer::fastforward_video, METH_VARARGS, "Fastforward a video." },
 	   { NULL, NULL }
 };
 

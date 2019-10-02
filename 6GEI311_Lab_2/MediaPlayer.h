@@ -2,6 +2,7 @@
 #include <dshow.h>
 #include <iostream>
 #include <Python.h>
+#include <utility>
 
 class MediaPlayer
 {
@@ -13,7 +14,6 @@ private:
 	HRESULT SetSeek();
 	HRESULT InitFilterGraphManager();
 	HRESULT BuildGraph();
-	
 public:
 	MediaPlayer();
 	~MediaPlayer();
@@ -22,6 +22,8 @@ public:
 		pause
 	};
 	States state;
+	States GetState();
+	void ChangeState(States state);
 	IGraphBuilder *Graph;
 	IMediaControl *Control;
 	IMediaEvent *Event;
