@@ -7,7 +7,9 @@ import msvcrt
 sys.path.append(".\\x64\\Release")
 import videoplayer
 
-media_player = videoplayer.init()
+# media_player = videoplayer.init()
+
+valid_commands = ('P', 'A', 'R', 'Q')
 
 print("The following commands are available:")
 print("P: Play or Pause the video")
@@ -18,16 +20,8 @@ print("Q: Quit the program\n")
 while True:
 	if msvcrt.kbhit():
 		key = (msvcrt.getch()).decode("utf-8").upper()
-		if key == 'P':
-			print("Pressed P")
-			media_player = videoplayer.play_video(media_player)
-		elif key == 'A':
-			# player.fastforward()
-			print("Pressed A")
-			videoplayer.fastforward_video(media_player)
-		elif key == 'R':
-			# player.rewind()
-			print("Pressed R")
-		elif key == 'Q':
-			print("Quitting...")
-			sys.exit()
+		if key in valid_commands:
+			videoplayer.vp_module(key)	
+			if key == 'Q':
+				print("Quitting...")
+				sys.exit()
